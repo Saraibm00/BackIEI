@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const Type = mongoose.Types;
 
 const request = require("request-promise"),
-    RUTA = "http://127.0.0.1:5000/vascos";
+    RUTA = "http://127.0.0.1:5000/euskadiJson";
 
 
 
