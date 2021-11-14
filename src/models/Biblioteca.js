@@ -4,8 +4,7 @@ const ObjectId = mongoose.Schema.Types.ObjectId;
 
 const BibliotecaSchema = new Schema({
     nombre: {
-        type: String,
-        required: true
+        type: String
     },
     tipo: {
         type: String,
@@ -13,20 +12,16 @@ const BibliotecaSchema = new Schema({
         default: 'Publica'
     },
     direccion: {
-        type: String,
-        required: true
+        type: String
     },
     codigoPostal: {
-        type: String,
-        required: true
+        type: String
     },
     longitud: {
-        type: Number,
-        required: true
+        type: Number
     },
     latitud: {
-        type: Number,
-        required: true
+        type: Number
     },
     telefono: {
         type: String,
@@ -35,13 +30,11 @@ const BibliotecaSchema = new Schema({
         type: String,
     },
     descripcion: {
-        type: String,
-        required: true
+        type: String
     },
     en_localidad: {
         type: ObjectId,
-        ref: 'Localidad',
-        required: true
+        ref: 'Localidad'
     },
 });
 
