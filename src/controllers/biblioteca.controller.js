@@ -1,3 +1,4 @@
+
 const { response } = require('express');
 const https = require('https');
 const http = require('http');
@@ -7,13 +8,36 @@ const Localidad = require('../models/Localidad');
 const mongoose = require('mongoose');
 const Type = mongoose.Types;
 
+const csvToJson = require('convert-csv-to-json');
 const request = require("request-promise");
 
 const xml2js = require('xml2js');
 
+const myAPIKey = "683c4b6f336d474cb157f818958cb987";
+
 const RUTAEUS = "http://127.0.0.1:5000/euskadiJson",
     RUTACAT = "http://127.0.0.1:5000/catJson",
-    RUTACV = "http://127.0.0.1:5000/euskadiJson";
+    RUTACV = "http://127.0.0.1:5000/valencia";
+
+const {Builder, By, Key, until} = require('selenium-webdriver');
+
+const firefox = require('selenium-webdriver/firefox');
+
+async function example() {
+      let driver = await new Builder().forBrowser('firefox').build();
+      try {
+        await driver.get('http://www.google.com/ncr');
+        await driver.findElement(By.name('q')).sendKeys('webdriver', Key.RETURN);
+        //await driver.wait(until.titleIs('webdriver - Google Search'), 1000);
+      } catch(e){
+        console.log(e);
+        console.log(driver);
+      }
+      finally {
+        await driver.quit();
+      }
+};
+example();
 
 const cargarBibliotecasCat = async(req, res = response) => {
 
@@ -299,7 +323,140 @@ const cargarBibliotecasEuskadi = async(req, res = response) => {
 
 const cargarBibliotecasValencia = async(req, res = response) => {
 
-    
+    let bibliotecas = [];
+    let jsonVal = {};
+    let csv;
+
+    let nuevasBibliotecas = [];
+    let nuevasLocalidades = [];
+    let nuevasProvincias = [];
+
+    await request({
+        uri: RUTACV,
+        json: true, // Para que lo decodifique automáticamente 
+    }).then(resp => {
+        csv = resp.data;
+        // console.log(csv);
+        // csvToJson.generateJsonFileFromCsv(csv, jsonVal);
+        bibliotecas = csvJSON(csv);
+    });
+
+    //console.log(bibliotecas);
+
+    bibliotecas.forEach(element => {
+
+        // console.log(element['telefon1']);
+
+        const { 
+            COD_PROVINCIA,
+            NOM_PROVINCIA,
+            COD_MUNICIPIO,
+            NOM_MUNICIPIO,
+            TIPO,
+            NOMBRE,
+            DIRECCION,
+            CP,
+            TELEFONO,
+            FAX,
+            WEB,
+            CATALOGO,
+            EMAIL,
+            CENTRAL,
+            COD_CARACTER,
+            DESC_CARACTER,
+            DECRETO
+         } = element;
+
+        let idProvincia = Type.ObjectId();
+        let idLocalidad = Type.ObjectId();
+
+        //console.log(typeof cpostal);
+
+        const nuevaProvincia = new Provincia({
+            _id: idProvincia,
+            nombre: NOM_PROVINCIA,
+            codigo: COD_PROVINCIA
+        })
+
+        nuevasProvincias.push(nuevaProvincia);
+
+        const nuevaLocalidad = new Localidad({
+            _id: idLocalidad,
+            nombre: NOM_MUNICIPIO,
+            codigo: COD_MUNICIPIO,
+            en_provincia: idProvincia
+        })
+
+        nuevasLocalidades.push(nuevaLocalidad);
+
+        // let tipo = 'Publica';
+        // if(properties.indexOf('Altra titularitat') != -1) {
+        //     tipo = 'Privada';
+        // }
+
+        // let address = DIRECCION + ', ' + NOM_MUNICIPIO;
+
+        // const geocodingUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${myAPIKey}`;
+
+        // // call Geocoding API - https://www.geoapify.com/geocoding-api/
+        // fetch(geocodingUrl).then(result => result.json())
+        // .then(featureCollection => {
+        //     console.log(featureCollection);
+        // });
+
+        const nuevaBiblioteca = new Biblioteca({
+            _id: Type.ObjectId(),
+            nombre: NOMBRE,
+            tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
+            direccion: DIRECCION,
+            codigoPostal: CP,
+            longitud: 1,
+            latitud: 2,
+            telefono: TELEFONO.substring(5),
+            email: EMAIL,
+            descripcion: TIPO,
+            en_localidad: idLocalidad
+        })
+
+        nuevasBibliotecas.push(nuevaBiblioteca);
+    });
+
+    //console.log(nuevasBibliotecas);
+
+    // try{
+        
+
+    //     await Provincia.insertMany(nuevasProvincias, function(err, result) {
+    //         // Your treatement
+    //     });
+
+    //     // console.log(nuevasLocalidades[0]);
+
+    //     // nuevasLocalidades[0].save();
+
+    //     await Localidad.insertMany(nuevasLocalidades, function(err, result) {
+    //         // Your treatement
+    //     });
+
+    //     await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
+    //         console.log(err);
+    //     });
+
+    //     // Generate response
+    //     return res.status(201).json({
+    //         ok: true,
+    //         msg: 'Bibliotecas creadas correctamente!'
+    //     });
+
+     
+    // } catch (error) {
+    //     console.log(error);
+    //     return res.status(500).json({
+    //         ok: false,
+    //         msg: 'Please, talk with administrator'
+    //     });
+    // }
+
 }
 
 const eliminarDatos = async(req, res = response) => {
@@ -318,7 +475,7 @@ const eliminarDatos = async(req, res = response) => {
 
 function convetirAString(valor) {
     if(valor !== undefined){
-        return valor.toString();
+        return valor.toString().trim();
     }
     else {
         return '';
@@ -383,6 +540,39 @@ function obtenerNombreCP(dosDigitosCP) {
     }
 
     return json[dosDigitosCP];
+}
+
+function csvJSON(csv){
+
+    var lines=csv.split("\n");
+    // console.log(lines[1]);
+    // console.log('Patata');
+
+    // NOTE: If your columns contain commas in their values, you'll need
+    // to deal with those before doing the next step 
+    // (you might convert them to &&& or something, then covert them back later)
+    // jsfiddle showing the issue https://jsfiddle.net/
+    var headers=lines[0].split(";");
+  
+    let res = [];
+
+    for(var i=1;i<lines.length-1;i++){
+  
+        var obj = {};
+        var row = [];
+        var currentline=lines[i].split(";");
+  
+        for(var j=0; j<headers.length; j++){
+            obj[headers[j]] = currentline[j];
+            row.push(obj);
+        }
+  
+        res.push(obj);
+  
+    }
+  
+    //return result; //JavaScript object
+    return res; //JSON
 }
 
 module.exports = {
