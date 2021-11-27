@@ -28,96 +28,142 @@ require("chromedriver");
   
 // Include selenium webdriver
 let swd = require("selenium-webdriver");
-let browser = new swd.Builder();
-let tab = browser.forBrowser("chrome").build();
 
-// Step 1 - Opening the geeksforgeeks sign in page
-let tabToOpen =
-    tab.get("https://www.coordenadas-gps.com/");
-tabToOpen
-    .then(function () {
-  
-        // Timeout to wait if connection is slow
-        let findTimeOutP =
-            tab.manage().setTimeouts({
-                implicit: 10000, // 10 seconds
+async function obtainCoordinates(direccion) {
+
+    console.log("Esta es la direccion: " + direccion);
+
+    let latitudBiblioteca = '';
+    let longitudBiblioteca = '';
+
+    let browser = new swd.Builder();
+    let tab = browser.forBrowser("chrome").build();
+
+    try {
+        // Step 1 - Opening the geeksforgeeks sign in page
+        let tabToOpen =
+        tab.get("https://www.coordenadas-gps.com/");
+        tabToOpen
+        .then(function () {
+    
+            // Timeout to wait if connection is slow
+            let findTimeOutP =
+                tab.manage().setTimeouts({
+                    implicit: 3000, // 10 seconds
+                });
+            return findTimeOutP;
+        })
+        .then(function () {
+    
+            // Step 2 - Finding the username input
+            let promiseAddress =
+                tab.findElement(swd.By.css("#address"));
+            
+            
+            return promiseAddress;
+        })
+        .then(function (address) {
+    
+            //await sleep(2000);
+    
+            // Step 3 - Entering the address
+            let promiseFillAddress =
+                address.sendKeys('Nueva York, Estados Unidos de América');
+            
+            return promiseFillAddress;
+        })
+        .then(function () {
+            // Step 6 - Finding the Sign In button
+            let promiseClickButton = tab.findElement(
+                swd.By.css(".btn.btn-primary")
+            );
+            return promiseClickButton;
+        })
+        .then(function (obtainBtn) {
+    
+            // Step 7 - Clicking the Sign In button
+    
+            let promiseClickBoton = obtainBtn.click();
+    
+    
+            obtainBtn.getText().then( result => {
+                console.log('Hola2' + result);
             });
-        return findTimeOutP;
-    })
-    .then(function () {
-  
-        // Step 2 - Finding the username input
-        let promiseAddress =
-            tab.findElement(swd.By.css("#address"));
-        
-        
-        return promiseAddress;
-    })
-    .then(function (address) {
-  
-        // Step 3 - Entering the address
-        let promiseFillAddress =
-            address.sendKeys("New York, NY, USA");
-        return promiseFillAddress;
-    })
-    .then(function () {
-        // Step 6 - Finding the Sign In button
-        let promiseClickButton = tab.findElement(
-            swd.By.css(".btn.btn-primary")
-        );
-        return promiseClickButton;
-    })
-    .then(function (obtainBtn) {
-  
-        // Step 7 - Clicking the Sign In button
-        let promiseClickBoton = obtainBtn.click();
-        return promiseClickBoton;
-    })
-    .then(function () {
-        // Step 8 - Finding the latitude input
+            // console.log('Hello' + obtainBtn.getText());
+            return promiseClickBoton;
+        })
+        .then(async function () {
+            // Step 6 - Finding the Sign In button
+            // let promiseInputLatitude = tab.findElement(
+            //     swd.By.css("#latitude")
+            // );
+    
+            await sleep(200);
+    
+            let promiseDiv = tab.findElement(
+                swd.By.xpath("//div[@id='info_window']")
+            );
+            
+            
+    
+            return promiseDiv;
+        })
+        .then(async function (nuestroDiv) {
+    
+            // Step 7 - Clicking the Sign In button
+            //let promiseClickBoton = obtainInput.click();
+            
+            //console.log(nuestroDiv);
+            nuestroDiv.getText().then( result => {
+                let indexFirstColon = result.indexOf(':');
+                let firstStep = result.slice(indexFirstColon+2);
+                let indexBarra = firstStep.indexOf('|');
+                let latitud = firstStep.slice(0, indexBarra-2);
+                console.log(latitud);
+                let secondStep = firstStep.slice(indexBarra+2);
+                let indexSecondColon = secondStep.indexOf(':');
+                let thirdStep = secondStep.slice(indexSecondColon+2);
+                let indexOfEnter = thirdStep.indexOf('\n');
+                let longitude = thirdStep.slice(0, indexOfEnter);
+                console.log(longitude);
 
-        let input = tab.findElement(By.id("latitude"));
+                latitudBiblioteca = latitud;
+                longitudBiblioteca = longitude;
+            });
+            await sleep(200);
+            tab.quit();
+        })
+        .catch(function (err) {
+            console.log("Error ", err, " occurred!");
+            tab.quit();
+        });
+    }
+    catch(e) {
+        console.log('ERROR');
+        tab.quit();
+    }
 
-        console.log(input);
+    if (latitudBiblioteca !== '') {
 
-        //console.log(input.getText());
+        let jsonRespuesta = {
+            latitud: latitudBiblioteca,
+            longitud : longitudBiblioteca
+        }
 
-        // input.then((res) => {
-        //     console.log("Respuesta de la promesa: " + res);
-        // })
+        return jsonRespuesta;
+    }
+    else {
 
-        //console.log(promiseLatitude.getAttribute("id"));
-        // console.log(promiseLatitude.getText());
+        let jsonRespuesta = {
+            latitud: '0',
+            longitud : '0'
+        }
 
-        let promiseLongitude =
-            tab.findElement(swd.By.css("#longitude"));
+        return jsonRespuesta;
 
-        //console.log(promiseLatitude.getAttribute("id"));
-        //console.log(promiseLatitude.getText());
+    }
+}
 
-        // console.log(promiseLatitude);
-        // console.log(promiseLongitude);
-    })
-    .catch(function (err) {
-        console.log("Error ", err, " occurred!");
-    });
-
-
-// async function example() {
-//       let driver = await new Builder().forBrowser('firefox').build();
-//       try {
-//         await driver.get('http://www.google.com/ncr');
-//         await driver.findElement(By.name('q')).sendKeys('webdriver', Key.RETURN);
-//         //await driver.wait(until.titleIs('webdriver - Google Search'), 1000);
-//       } catch(e){
-//         console.log(e);
-//         console.log(driver);
-//       }
-//       finally {
-//         await driver.quit();
-//       }
-// };
-// example();
 
 const cargarBibliotecasCat = async(req, res = response) => {
 
@@ -423,83 +469,145 @@ const cargarBibliotecasValencia = async(req, res = response) => {
 
     //console.log(bibliotecas);
 
-    bibliotecas.forEach(element => {
+    for (let i = 0; i < bibliotecas.length; i++){
 
-        // console.log(element['telefon1']);
+        let element = bibliotecas[i];
 
-        const { 
-            COD_PROVINCIA,
-            NOM_PROVINCIA,
-            COD_MUNICIPIO,
-            NOM_MUNICIPIO,
-            TIPO,
-            NOMBRE,
-            DIRECCION,
-            CP,
-            TELEFONO,
-            FAX,
-            WEB,
-            CATALOGO,
-            EMAIL,
-            CENTRAL,
-            COD_CARACTER,
-            DESC_CARACTER,
-            DECRETO
-         } = element;
+            const { 
+                COD_PROVINCIA,
+                NOM_PROVINCIA,
+                COD_MUNICIPIO,
+                NOM_MUNICIPIO,
+                TIPO,
+                NOMBRE,
+                DIRECCION,
+                CP,
+                TELEFONO,
+                FAX,
+                WEB,
+                CATALOGO,
+                EMAIL,
+                CENTRAL,
+                COD_CARACTER,
+                DESC_CARACTER,
+                DECRETO
+            } = element;
 
-        let idProvincia = Type.ObjectId();
-        let idLocalidad = Type.ObjectId();
+            let idProvincia = Type.ObjectId();
+            let idLocalidad = Type.ObjectId();
 
-        //console.log(typeof cpostal);
+            //console.log(typeof cpostal);
 
-        const nuevaProvincia = new Provincia({
-            _id: idProvincia,
-            nombre: NOM_PROVINCIA,
-            codigo: COD_PROVINCIA
-        })
+            const nuevaProvincia = new Provincia({
+                _id: idProvincia,
+                nombre: NOM_PROVINCIA,
+                codigo: COD_PROVINCIA
+            })
 
-        nuevasProvincias.push(nuevaProvincia);
+            nuevasProvincias.push(nuevaProvincia);
 
-        const nuevaLocalidad = new Localidad({
-            _id: idLocalidad,
-            nombre: NOM_MUNICIPIO,
-            codigo: COD_MUNICIPIO,
-            en_provincia: idProvincia
-        })
+            const nuevaLocalidad = new Localidad({
+                _id: idLocalidad,
+                nombre: NOM_MUNICIPIO,
+                codigo: COD_MUNICIPIO,
+                en_provincia: idProvincia
+            })
 
-        nuevasLocalidades.push(nuevaLocalidad);
+            nuevasLocalidades.push(nuevaLocalidad);
 
-        // let tipo = 'Publica';
-        // if(properties.indexOf('Altra titularitat') != -1) {
-        //     tipo = 'Privada';
-        // }
+            await sleep(5000);
 
-        // let address = DIRECCION + ', ' + NOM_MUNICIPIO;
+            let geoposicion = await obtainCoordinates(DIRECCION);
 
-        // const geocodingUrl = `https://api.geoapify.com/v1/geocode/search?text=${encodeURIComponent(address)}&apiKey=${myAPIKey}`;
+            console.log('DESC_CARACTER: ' + DESC_CARACTER);
 
-        // // call Geocoding API - https://www.geoapify.com/geocoding-api/
-        // fetch(geocodingUrl).then(result => result.json())
-        // .then(featureCollection => {
-        //     console.log(featureCollection);
-        // });
+            const nuevaBiblioteca = new Biblioteca({
+                _id: Type.ObjectId(),
+                nombre: NOMBRE,
+                tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
+                direccion: DIRECCION,
+                codigoPostal: CP,
+                longitud: parseInt(geoposicion.longitud),
+                latitud: parseInt(geoposicion.latitud),
+                telefono: TELEFONO.substring(5),
+                email: EMAIL,
+                descripcion: TIPO,
+                en_localidad: idLocalidad
+            })
 
-        const nuevaBiblioteca = new Biblioteca({
-            _id: Type.ObjectId(),
-            nombre: NOMBRE,
-            tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
-            direccion: DIRECCION,
-            codigoPostal: CP,
-            longitud: 1,
-            latitud: 2,
-            telefono: TELEFONO.substring(5),
-            email: EMAIL,
-            descripcion: TIPO,
-            en_localidad: idLocalidad
-        })
+            nuevasBibliotecas.push(nuevaBiblioteca);
+        
 
-        nuevasBibliotecas.push(nuevaBiblioteca);
-    });
+    }
+
+    // bibliotecas.forEach( async element => {
+
+    //     // console.log(element['telefon1']);
+
+    //     const { 
+    //         COD_PROVINCIA,
+    //         NOM_PROVINCIA,
+    //         COD_MUNICIPIO,
+    //         NOM_MUNICIPIO,
+    //         TIPO,
+    //         NOMBRE,
+    //         DIRECCION,
+    //         CP,
+    //         TELEFONO,
+    //         FAX,
+    //         WEB,
+    //         CATALOGO,
+    //         EMAIL,
+    //         CENTRAL,
+    //         COD_CARACTER,
+    //         DESC_CARACTER,
+    //         DECRETO
+    //      } = element;
+
+    //     let idProvincia = Type.ObjectId();
+    //     let idLocalidad = Type.ObjectId();
+
+    //     //console.log(typeof cpostal);
+
+    //     const nuevaProvincia = new Provincia({
+    //         _id: idProvincia,
+    //         nombre: NOM_PROVINCIA,
+    //         codigo: COD_PROVINCIA
+    //     })
+
+    //     nuevasProvincias.push(nuevaProvincia);
+
+    //     const nuevaLocalidad = new Localidad({
+    //         _id: idLocalidad,
+    //         nombre: NOM_MUNICIPIO,
+    //         codigo: COD_MUNICIPIO,
+    //         en_provincia: idProvincia
+    //     })
+
+    //     nuevasLocalidades.push(nuevaLocalidad);
+
+    //     await sleep(10000);
+
+    //     let geoposicion = await obtainCoordinates(DIRECCION);
+
+    //     console.log('DESC_CARACTER: ' + DESC_CARACTER);
+
+    //     const nuevaBiblioteca = new Biblioteca({
+    //         _id: Type.ObjectId(),
+    //         nombre: NOMBRE,
+    //         tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
+    //         direccion: DIRECCION,
+    //         codigoPostal: CP,
+    //         longitud: parseInt(geoposicion.longitud),
+    //         latitud: parseInt(geoposicion.latitud),
+    //         telefono: TELEFONO.substring(5),
+    //         email: EMAIL,
+    //         descripcion: TIPO,
+    //         en_localidad: idLocalidad
+    //     })
+
+    //     nuevasBibliotecas.push(nuevaBiblioteca);
+    // });
 
     //console.log(nuevasBibliotecas);
 
@@ -653,6 +761,10 @@ function csvJSON(csv){
   
     //return result; //JavaScript object
     return res; //JSON
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = {
