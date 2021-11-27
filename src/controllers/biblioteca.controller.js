@@ -21,23 +21,103 @@ const RUTAEUS = "http://127.0.0.1:5000/euskadiJson",
 
 const {Builder, By, Key, until} = require('selenium-webdriver');
 
-const firefox = require('selenium-webdriver/firefox');
+// const firefox = require('selenium-webdriver/firefox');
 
-async function example() {
-      let driver = await new Builder().forBrowser('firefox').build();
-      try {
-        await driver.get('http://www.google.com/ncr');
-        await driver.findElement(By.name('q')).sendKeys('webdriver', Key.RETURN);
-        //await driver.wait(until.titleIs('webdriver - Google Search'), 1000);
-      } catch(e){
-        console.log(e);
-        console.log(driver);
-      }
-      finally {
-        await driver.quit();
-      }
-};
-example();
+// Include the chrome driver
+require("chromedriver");
+  
+// Include selenium webdriver
+let swd = require("selenium-webdriver");
+let browser = new swd.Builder();
+let tab = browser.forBrowser("chrome").build();
+
+// Step 1 - Opening the geeksforgeeks sign in page
+let tabToOpen =
+    tab.get("https://www.coordenadas-gps.com/");
+tabToOpen
+    .then(function () {
+  
+        // Timeout to wait if connection is slow
+        let findTimeOutP =
+            tab.manage().setTimeouts({
+                implicit: 10000, // 10 seconds
+            });
+        return findTimeOutP;
+    })
+    .then(function () {
+  
+        // Step 2 - Finding the username input
+        let promiseAddress =
+            tab.findElement(swd.By.css("#address"));
+        
+        
+        return promiseAddress;
+    })
+    .then(function (address) {
+  
+        // Step 3 - Entering the address
+        let promiseFillAddress =
+            address.sendKeys("New York, NY, USA");
+        return promiseFillAddress;
+    })
+    .then(function () {
+        // Step 6 - Finding the Sign In button
+        let promiseClickButton = tab.findElement(
+            swd.By.css(".btn.btn-primary")
+        );
+        return promiseClickButton;
+    })
+    .then(function (obtainBtn) {
+  
+        // Step 7 - Clicking the Sign In button
+        let promiseClickBoton = obtainBtn.click();
+        return promiseClickBoton;
+    })
+    .then(function () {
+        // Step 8 - Finding the latitude input
+
+        let input = tab.findElement(By.id("latitude"));
+
+        console.log(input);
+
+        //console.log(input.getText());
+
+        // input.then((res) => {
+        //     console.log("Respuesta de la promesa: " + res);
+        // })
+
+        //console.log(promiseLatitude.getAttribute("id"));
+        // console.log(promiseLatitude.getText());
+
+        let promiseLongitude =
+            tab.findElement(swd.By.css("#longitude"));
+
+        //console.log(promiseLatitude.getAttribute("id"));
+        //console.log(promiseLatitude.getText());
+
+        // console.log(promiseLatitude);
+        // console.log(promiseLongitude);
+    })
+    .catch(function (err) {
+        console.log("Error ", err, " occurred!");
+    });
+
+
+// async function example() {
+//       let driver = await new Builder().forBrowser('firefox').build();
+//       try {
+//         await driver.get('http://www.google.com/ncr');
+//         await driver.findElement(By.name('q')).sendKeys('webdriver', Key.RETURN);
+//         //await driver.wait(until.titleIs('webdriver - Google Search'), 1000);
+//       } catch(e){
+//         console.log(e);
+//         console.log(driver);
+//       }
+//       finally {
+//         await driver.quit();
+//       }
+// };
+// example();
 
 const cargarBibliotecasCat = async(req, res = response) => {
 
