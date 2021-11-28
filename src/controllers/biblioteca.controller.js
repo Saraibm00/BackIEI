@@ -29,31 +29,17 @@ require("chromedriver");
 // Include selenium webdriver
 let swd = require("selenium-webdriver");
 
-async function obtainCoordinates(direccion) {
+let tab;
 
-    console.log("Esta es la direccion: " + direccion);
+async function obtainDireccion(tabOpened, direccion, ciudad) {
 
     let latitudBiblioteca = '';
     let longitudBiblioteca = '';
 
-    let browser = new swd.Builder();
-    let tab = browser.forBrowser("chrome").build();
+    let jsonRespuesta;
 
     try {
-        // Step 1 - Opening the geeksforgeeks sign in page
-        let tabToOpen =
-        tab.get("https://www.coordenadas-gps.com/");
-        tabToOpen
-        .then(function () {
-    
-            // Timeout to wait if connection is slow
-            let findTimeOutP =
-                tab.manage().setTimeouts({
-                    implicit: 3000, // 10 seconds
-                });
-            return findTimeOutP;
-        })
-        .then(function () {
+        await tabOpened.then(function () {
     
             // Step 2 - Finding the username input
             let promiseAddress =
@@ -64,12 +50,20 @@ async function obtainCoordinates(direccion) {
         })
         .then(function (address) {
     
-            //await sleep(2000);
-    
+            // Step 3 - Entering the address
+            address.clear();
+            
+            return address;
+        })
+        .then(function (address) {
+            let indexAddr = direccion.indexOf('º')-2;
+            let addr = direccion.substring(0, indexAddr);
+            addr = addr +', '+ ciudad + ', España';
+            
             // Step 3 - Entering the address
             let promiseFillAddress =
-                address.sendKeys('Nueva York, Estados Unidos de América');
-            
+                address.sendKeys(addr);
+                
             return promiseFillAddress;
         })
         .then(function () {
@@ -87,7 +81,6 @@ async function obtainCoordinates(direccion) {
     
     
             obtainBtn.getText().then( result => {
-                console.log('Hola2' + result);
             });
             // console.log('Hello' + obtainBtn.getText());
             return promiseClickBoton;
@@ -98,7 +91,7 @@ async function obtainCoordinates(direccion) {
             //     swd.By.css("#latitude")
             // );
     
-            await sleep(200);
+            await sleep(1000);
     
             let promiseDiv = tab.findElement(
                 swd.By.xpath("//div[@id='info_window']")
@@ -119,49 +112,77 @@ async function obtainCoordinates(direccion) {
                 let firstStep = result.slice(indexFirstColon+2);
                 let indexBarra = firstStep.indexOf('|');
                 let latitud = firstStep.slice(0, indexBarra-2);
-                console.log(latitud);
                 let secondStep = firstStep.slice(indexBarra+2);
                 let indexSecondColon = secondStep.indexOf(':');
                 let thirdStep = secondStep.slice(indexSecondColon+2);
                 let indexOfEnter = thirdStep.indexOf('\n');
                 let longitude = thirdStep.slice(0, indexOfEnter);
-                console.log(longitude);
 
                 latitudBiblioteca = latitud;
                 longitudBiblioteca = longitude;
+
+                if (latitudBiblioteca != '') {
+
+                    jsonRespuesta = {
+                        latitud: latitudBiblioteca,
+                        longitud : longitudBiblioteca
+                    }
+                }
+                else {
+
+                    jsonRespuesta = {
+                        latitud: '0',
+                        longitud : '0'
+                    }
+                }
             });
-            await sleep(200);
-            tab.quit();
         })
         .catch(function (err) {
             console.log("Error ", err, " occurred!");
-            tab.quit();
         });
+    }
+    catch(e) {
+        console.log('ERROR');
+    }
+
+    while (jsonRespuesta==undefined)
+    {
+        await sleep(300);
+    }
+
+    return jsonRespuesta;
+}
+
+async function obtainTabOpened() {
+
+    let browser = new swd.Builder();
+    tab = browser.forBrowser("chrome").build();
+
+    let tabOpened;
+
+    try {
+        // Step 1 - Opening the geeksforgeeks sign in page
+        let tabToOpen = tab.get("https://www.coordenadas-gps.com/");
+        tabToOpen
+        .then(tabOpened = function () {
+    
+            // Timeout to wait if connection is slow
+            let findTimeOutP =
+                tab.manage().setTimeouts({
+                    implicit: 3000, // 10 seconds
+                });
+            return findTimeOutP;
+        })
+        
     }
     catch(e) {
         console.log('ERROR');
         tab.quit();
     }
 
-    if (latitudBiblioteca !== '') {
+    return tabOpened;
 
-        let jsonRespuesta = {
-            latitud: latitudBiblioteca,
-            longitud : longitudBiblioteca
-        }
-
-        return jsonRespuesta;
-    }
-    else {
-
-        let jsonRespuesta = {
-            latitud: '0',
-            longitud : '0'
-        }
-
-        return jsonRespuesta;
-
-    }
+    
 }
 
 
@@ -469,6 +490,8 @@ const cargarBibliotecasValencia = async(req, res = response) => {
 
     //console.log(bibliotecas);
 
+    let tabOpened = obtainTabOpened();
+    await sleep(15000);
     for (let i = 0; i < bibliotecas.length; i++){
 
         let element = bibliotecas[i];
@@ -496,14 +519,11 @@ const cargarBibliotecasValencia = async(req, res = response) => {
             let idProvincia = Type.ObjectId();
             let idLocalidad = Type.ObjectId();
 
-            //console.log(typeof cpostal);
-
             const nuevaProvincia = new Provincia({
                 _id: idProvincia,
                 nombre: NOM_PROVINCIA,
                 codigo: COD_PROVINCIA
             })
-
             nuevasProvincias.push(nuevaProvincia);
 
             const nuevaLocalidad = new Localidad({
@@ -512,14 +532,17 @@ const cargarBibliotecasValencia = async(req, res = response) => {
                 codigo: COD_MUNICIPIO,
                 en_provincia: idProvincia
             })
-
             nuevasLocalidades.push(nuevaLocalidad);
 
-            await sleep(5000);
+            let latitud2;
+            let longitud2;
 
-            let geoposicion = await obtainCoordinates(DIRECCION);
+            await obtainDireccion(tabOpened, DIRECCION, NOM_MUNICIPIO).then(resp => {
+                latitud2 = resp.latitud;
+                longitud2 = resp.longitud;
+            });
 
-            console.log('DESC_CARACTER: ' + DESC_CARACTER);
+            await sleep(10000);
 
             const nuevaBiblioteca = new Biblioteca({
                 _id: Type.ObjectId(),
@@ -527,8 +550,8 @@ const cargarBibliotecasValencia = async(req, res = response) => {
                 tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
                 direccion: DIRECCION,
                 codigoPostal: CP,
-                longitud: parseInt(geoposicion.longitud),
-                latitud: parseInt(geoposicion.latitud),
+                longitud: parseFloat(longitud2),
+                latitud: parseFloat(latitud2),
                 telefono: TELEFONO.substring(5),
                 email: EMAIL,
                 descripcion: TIPO,
@@ -536,9 +559,11 @@ const cargarBibliotecasValencia = async(req, res = response) => {
             })
 
             nuevasBibliotecas.push(nuevaBiblioteca);
-        
-
     }
+
+    console.log(nuevasBibliotecas);
+    
+    tab.quit();
 
     // bibliotecas.forEach( async element => {
 
@@ -588,7 +613,7 @@ const cargarBibliotecasValencia = async(req, res = response) => {
 
     //     await sleep(10000);
 
-    //     let geoposicion = await obtainCoordinates(DIRECCION);
+    //     let geoposicion = await obtainTabOpened(DIRECCION);
 
     //     console.log('DESC_CARACTER: ' + DESC_CARACTER);
 
@@ -609,41 +634,39 @@ const cargarBibliotecasValencia = async(req, res = response) => {
     //     nuevasBibliotecas.push(nuevaBiblioteca);
     // });
 
-    //console.log(nuevasBibliotecas);
-
-    // try{
+     try{
         
 
-    //     await Provincia.insertMany(nuevasProvincias, function(err, result) {
-    //         // Your treatement
-    //     });
+        await Provincia.insertMany(nuevasProvincias, function(err, result) {
+            // Your treatement
+        });
 
-    //     // console.log(nuevasLocalidades[0]);
+        // console.log(nuevasLocalidades[0]);
 
-    //     // nuevasLocalidades[0].save();
+        // nuevasLocalidades[0].save();
 
-    //     await Localidad.insertMany(nuevasLocalidades, function(err, result) {
-    //         // Your treatement
-    //     });
+        await Localidad.insertMany(nuevasLocalidades, function(err, result) {
+            // Your treatement
+        });
 
-    //     await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
-    //         console.log(err);
-    //     });
+        await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
+            console.log(err);
+        });
 
-    //     // Generate response
-    //     return res.status(201).json({
-    //         ok: true,
-    //         msg: 'Bibliotecas creadas correctamente!'
-    //     });
+        // Generate response
+        return res.status(201).json({
+            ok: true,
+            msg: 'Bibliotecas creadas correctamente!'
+        });
 
      
-    // } catch (error) {
-    //     console.log(error);
-    //     return res.status(500).json({
-    //         ok: false,
-    //         msg: 'Please, talk with administrator'
-    //     });
-    // }
+    } catch (error) {
+         console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Please, talk with administrator'
+        });
+    }
 
 }
 
@@ -731,11 +754,8 @@ function obtenerNombreCP(dosDigitosCP) {
 }
 
 function csvJSON(csv){
-
     var lines=csv.split("\n");
     // console.log(lines[1]);
-    // console.log('Patata');
-
     // NOTE: If your columns contain commas in their values, you'll need
     // to deal with those before doing the next step 
     // (you might convert them to &&& or something, then covert them back later)
