@@ -542,8 +542,6 @@ const cargarBibliotecasValencia = async(req, res = response) => {
                 longitud2 = resp.longitud;
             });
 
-            await sleep(10000);
-
             const nuevaBiblioteca = new Biblioteca({
                 _id: Type.ObjectId(),
                 nombre: NOMBRE,
