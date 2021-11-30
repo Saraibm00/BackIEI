@@ -59,7 +59,7 @@ async function obtainDireccion(tabOpened, direccion, ciudad) {
             let indexAddr = direccion.indexOf('º')-2;
             let addr = direccion.substring(0, indexAddr);
             addr = addr +', '+ ciudad + ', España';
-            
+            //let addr = '-.';
             // Step 3 - Entering the address
             let promiseFillAddress =
                 address.sendKeys(addr);
@@ -138,7 +138,18 @@ async function obtainDireccion(tabOpened, direccion, ciudad) {
             });
         })
         .catch(function (err) {
-            console.log("Error ", err, " occurred!");
+            //console.log("Error ", err, " occurred!");
+
+            let alert = tab.switchTo().alert();
+            // Presiona el botón OK
+            alert.accept();
+
+            jsonRespuesta = {
+                latitud: '0',
+                longitud : '0'
+            }
+
+            return jsonRespuesta;
         });
     }
     catch(e) {
@@ -323,11 +334,165 @@ const cargarBibliotecasCat = async(req, res = response) => {
             console.log(err);
         });
 
-        // Generate response
+        //Generate response
         return res.status(201).json({
             ok: true,
             msg: 'Bibliotecas creadas correctamente!'
         });
+
+     
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Please, talk with administrator'
+        });
+    }
+
+}
+
+const cargarBibliotecasCatInd = async(req, res = response) => {
+
+    let bibliotecas = [];
+    let xml = '';
+
+    let nuevasBibliotecas = [];
+    let nuevasLocalidades = [];
+    let nuevasProvincias = [];
+
+    await request({
+        uri: RUTACAT,
+        json: true, // Para que lo decodifique automáticamente 
+    }).then(resp => {
+        xml = resp.data;
+        //console.log(xml);
+    });
+
+    // convert XML to JSON
+    xml2js.parseString(xml, (err, result) => {
+
+        if(err) {
+            throw err;
+        }
+
+        // `result` is a JavaScript object
+        // convert it to a JSON string
+        const jsonString = JSON.stringify(result, null, 4);
+        const json = JSON.parse(jsonString);
+        // log JSON string
+        //console.log(json.response.row);
+        bibliotecas = json.response.row;
+    });
+
+    //console.log(bibliotecas);
+
+    bibliotecas.forEach(element => {
+
+        // console.log(element['telefon1']);
+
+        const { 
+            nom,
+            propietats,
+            via,
+            cpostal,
+            longitud,
+            latitud,
+            telefon1,
+            email,
+            alies,
+            poblacio,
+            codi_municipi
+         } = element;
+
+        const name = convetirAString(nom);
+        const properties = convetirAString(propietats);
+        const street = convetirAString(via);
+        const zipCode = convetirAString(cpostal);
+        const longitude = convetirAString(longitud);
+        const latitude = convetirAString(latitud);
+        const telephone = convetirAString(telefon1);
+        const emailB = convetirAString(email);
+        const aka = convetirAString(alies);
+        const poblation = convetirAString(poblacio);
+        const municipalCode = convetirAString(codi_municipi);
+
+        let idProvincia = Type.ObjectId();
+        let idLocalidad = Type.ObjectId();
+
+        //console.log(typeof cpostal);
+
+        let nombreProvincia = obtenerNombreCP(zipCode.substring(0,2));
+
+        const nuevaProvincia = new Provincia({
+            _id: idProvincia,
+            nombre: nombreProvincia,
+            codigo: zipCode.substring(0,2)
+        })
+
+        nuevasProvincias.push(nuevaProvincia);
+
+        const nuevaLocalidad = new Localidad({
+            _id: idLocalidad,
+            nombre: poblation,
+            codigo: municipalCode,
+            en_provincia: idProvincia
+        })
+
+        nuevasLocalidades.push(nuevaLocalidad);
+
+        let tipo = 'Publica';
+        if(properties.indexOf('Altra titularitat') != -1) {
+            tipo = 'Privada';
+        }
+
+        const nuevaBiblioteca = new Biblioteca({
+            _id: Type.ObjectId(),
+            nombre: name,
+            tipo: tipo,
+            direccion: street,
+            codigoPostal: zipCode,
+            longitud: longitude,
+            latitud: latitude,
+            telefono: (telephone.replace(/ /g, "")).substring(0, 9),
+            email: emailB,
+            descripcion: aka,
+            en_localidad: idLocalidad
+        })
+
+        nuevasBibliotecas.push(nuevaBiblioteca);
+    });
+
+    //console.log(nuevasBibliotecas);
+
+    try{
+        
+        // console.log(nuevasProvincias);
+
+        // console.log(nuevasLocalidades);
+
+        // console.log(nuevasBibliotecas);
+
+        await Provincia.insertMany(nuevasProvincias, function(err, result) {
+            // Your treatement
+        });
+
+        // console.log(nuevasLocalidades[0]);
+
+        // nuevasLocalidades[0].save();
+
+        await Localidad.insertMany(nuevasLocalidades, function(err, result) {
+            // Your treatement
+        });
+
+        await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
+            console.log(err);
+        });
+
+        // Generate response
+        // return res.status(201).json({
+        //     ok: true,
+        //     msg: 'Bibliotecas creadas correctamente!'
+        // });
 
      
     } catch (error) {
@@ -357,11 +522,11 @@ const cargarBibliotecasEuskadi = async(req, res = response) => {
         //console.log(bibliotecas);
     });
 
-    console.log(bibliotecas);
+    //console.log(bibliotecas);
 
     bibliotecas.forEach(element => {
 
-        console.log(element['phone']);
+        //console.log(element['phone']);
 
         const { 
             documentName,
@@ -429,11 +594,11 @@ const cargarBibliotecasEuskadi = async(req, res = response) => {
 
     try{
         
-        console.log(nuevasProvincias);
+        //console.log(nuevasProvincias);
 
-        console.log(nuevasLocalidades);
+        //console.log(nuevasLocalidades);
 
-        console.log(nuevasBibliotecas);
+        //console.log(nuevasBibliotecas);
 
         await Provincia.insertMany(nuevasProvincias, function(err, result) {
             // Your treatement
@@ -456,6 +621,134 @@ const cargarBibliotecasEuskadi = async(req, res = response) => {
             ok: true,
             msg: 'Bibliotecas creadas correctamente!'
         });
+
+     
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Please, talk with administrator'
+        });
+    }
+
+}
+
+const cargarBibliotecasEuskadiInd = async(req, res = response) => {
+
+    //const { confortRating, comment, realfoodRating, priceRating, establishment, user } = req.body;
+    let bibliotecas = [];
+
+    let nuevasBibliotecas = [];
+    let nuevasLocalidades = [];
+    let nuevasProvincias = [];
+
+    await request({
+        uri: RUTAEUS,
+        json: true, // Para que lo decodifique automáticamente 
+    }).then(resp => {
+        bibliotecas = resp.data;
+        //console.log(bibliotecas);
+    });
+
+    //console.log(bibliotecas);
+
+    bibliotecas.forEach(element => {
+
+        //console.log(element['phone']);
+
+        const { 
+            documentName,
+            documentDescription,
+            libraryTimeTable,
+            librarySummerTimeTable,
+            latitudelongitude,
+            latwgs84,
+            lonwgs84,
+            placename,
+            address,
+            municipality,
+            municipalitycode,
+            postalcode,
+            territory,
+            territorycode,
+            country,
+            countrycode,
+            phone,
+            email,
+            webpage,
+            friendlyUrl,
+            physicalUrl,
+            dataXML,
+            metadataXML,
+            zipFile
+         } = element;
+
+        let idProvincia = Type.ObjectId();
+        let idLocalidad = Type.ObjectId();
+
+        const nuevaProvincia = new Provincia({
+            _id: idProvincia,
+            nombre: territory,
+            codigo: postalcode[0]+postalcode[1]
+        })
+
+        nuevasProvincias.push(nuevaProvincia);
+
+        const nuevaLocalidad = new Localidad({
+            _id: idLocalidad,
+            nombre: municipality,
+            codigo: postalcode.toString().replace('.', ""),
+            en_provincia: idProvincia
+        })
+
+        nuevasLocalidades.push(nuevaLocalidad);
+
+        const nuevaBiblioteca = new Biblioteca({
+            _id: Type.ObjectId(),
+            nombre: documentName,
+            tipo: 'Publica',
+            direccion: address,
+            codigoPostal: postalcode.toString().replace('.', ""),
+            longitud: lonwgs84,
+            latitud: latwgs84,
+            telefono: (phone.replace(/ /g, "")).substring(0, 9),
+            email: email,
+            descripcion: documentDescription,
+            en_localidad: idLocalidad
+        })
+
+        nuevasBibliotecas.push(nuevaBiblioteca);
+    });
+
+    try{
+        
+        //console.log(nuevasProvincias);
+
+        //console.log(nuevasLocalidades);
+
+        //console.log(nuevasBibliotecas);
+
+        await Provincia.insertMany(nuevasProvincias, function(err, result) {
+            // Your treatement
+        });
+
+        // console.log(nuevasLocalidades[0]);
+
+        // nuevasLocalidades[0].save();
+
+        await Localidad.insertMany(nuevasLocalidades, function(err, result) {
+            // Your treatement
+        });
+
+        await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
+            console.log(err);
+        });
+
+        // // Generate response
+        // return res.status(201).json({
+        //     ok: true,
+        //     msg: 'Bibliotecas creadas correctamente!'
+        // });
 
      
     } catch (error) {
@@ -545,7 +838,7 @@ const cargarBibliotecasValencia = async(req, res = response) => {
             const nuevaBiblioteca = new Biblioteca({
                 _id: Type.ObjectId(),
                 nombre: NOMBRE,
-                tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
+                tipo: convertTipoCV(DESC_CARACTER),
                 direccion: DIRECCION,
                 codigoPostal: CP,
                 longitud: parseFloat(longitud2),
@@ -559,78 +852,9 @@ const cargarBibliotecasValencia = async(req, res = response) => {
             nuevasBibliotecas.push(nuevaBiblioteca);
     }
 
-    console.log(nuevasBibliotecas);
+    //console.log(nuevasBibliotecas);
     
     tab.quit();
-
-    // bibliotecas.forEach( async element => {
-
-    //     // console.log(element['telefon1']);
-
-    //     const { 
-    //         COD_PROVINCIA,
-    //         NOM_PROVINCIA,
-    //         COD_MUNICIPIO,
-    //         NOM_MUNICIPIO,
-    //         TIPO,
-    //         NOMBRE,
-    //         DIRECCION,
-    //         CP,
-    //         TELEFONO,
-    //         FAX,
-    //         WEB,
-    //         CATALOGO,
-    //         EMAIL,
-    //         CENTRAL,
-    //         COD_CARACTER,
-    //         DESC_CARACTER,
-    //         DECRETO
-    //      } = element;
-
-    //     let idProvincia = Type.ObjectId();
-    //     let idLocalidad = Type.ObjectId();
-
-    //     //console.log(typeof cpostal);
-
-    //     const nuevaProvincia = new Provincia({
-    //         _id: idProvincia,
-    //         nombre: NOM_PROVINCIA,
-    //         codigo: COD_PROVINCIA
-    //     })
-
-    //     nuevasProvincias.push(nuevaProvincia);
-
-    //     const nuevaLocalidad = new Localidad({
-    //         _id: idLocalidad,
-    //         nombre: NOM_MUNICIPIO,
-    //         codigo: COD_MUNICIPIO,
-    //         en_provincia: idProvincia
-    //     })
-
-    //     nuevasLocalidades.push(nuevaLocalidad);
-
-    //     await sleep(10000);
-
-    //     let geoposicion = await obtainTabOpened(DIRECCION);
-
-    //     console.log('DESC_CARACTER: ' + DESC_CARACTER);
-
-    //     const nuevaBiblioteca = new Biblioteca({
-    //         _id: Type.ObjectId(),
-    //         nombre: NOMBRE,
-    //         tipo: 'P' + DESC_CARACTER.substring(1).toLowerCase(),
-    //         direccion: DIRECCION,
-    //         codigoPostal: CP,
-    //         longitud: parseInt(geoposicion.longitud),
-    //         latitud: parseInt(geoposicion.latitud),
-    //         telefono: TELEFONO.substring(5),
-    //         email: EMAIL,
-    //         descripcion: TIPO,
-    //         en_localidad: idLocalidad
-    //     })
-
-    //     nuevasBibliotecas.push(nuevaBiblioteca);
-    // });
 
      try{
         
@@ -665,6 +889,161 @@ const cargarBibliotecasValencia = async(req, res = response) => {
             msg: 'Please, talk with administrator'
         });
     }
+
+}
+
+const cargarBibliotecasValenciaInd = async(req, res = response) => {
+
+    let bibliotecas = [];
+    let jsonVal = {};
+    let csv;
+
+    let nuevasBibliotecas = [];
+    let nuevasLocalidades = [];
+    let nuevasProvincias = [];
+
+    await request({
+        uri: RUTACV,
+        json: true, // Para que lo decodifique automáticamente 
+    }).then(resp => {
+        csv = resp.data;
+        // console.log(csv);
+        // csvToJson.generateJsonFileFromCsv(csv, jsonVal);
+        bibliotecas = csvJSON(csv);
+    });
+
+    //console.log(bibliotecas);
+
+    let tabOpened = obtainTabOpened();
+    await sleep(15000);
+    for (let i = 0; i < bibliotecas.length; i++){
+
+        let element = bibliotecas[i];
+
+            const { 
+                COD_PROVINCIA,
+                NOM_PROVINCIA,
+                COD_MUNICIPIO,
+                NOM_MUNICIPIO,
+                TIPO,
+                NOMBRE,
+                DIRECCION,
+                CP,
+                TELEFONO,
+                FAX,
+                WEB,
+                CATALOGO,
+                EMAIL,
+                CENTRAL,
+                COD_CARACTER,
+                DESC_CARACTER,
+                DECRETO
+            } = element;
+
+            let idProvincia = Type.ObjectId();
+            let idLocalidad = Type.ObjectId();
+
+            const nuevaProvincia = new Provincia({
+                _id: idProvincia,
+                nombre: NOM_PROVINCIA,
+                codigo: COD_PROVINCIA
+            })
+            nuevasProvincias.push(nuevaProvincia);
+
+            const nuevaLocalidad = new Localidad({
+                _id: idLocalidad,
+                nombre: NOM_MUNICIPIO,
+                codigo: COD_MUNICIPIO,
+                en_provincia: idProvincia
+            })
+            nuevasLocalidades.push(nuevaLocalidad);
+
+            let latitud2;
+            let longitud2;
+
+            await obtainDireccion(tabOpened, DIRECCION, NOM_MUNICIPIO).then(resp => {
+                latitud2 = resp.latitud;
+                longitud2 = resp.longitud;
+            });
+
+            const nuevaBiblioteca = new Biblioteca({
+                _id: Type.ObjectId(),
+                nombre: NOMBRE,
+                tipo: convertTipoCV(DESC_CARACTER),
+                direccion: DIRECCION,
+                codigoPostal: CP,
+                longitud: parseFloat(longitud2),
+                latitud: parseFloat(latitud2),
+                telefono: TELEFONO.substring(5),
+                email: EMAIL,
+                descripcion: TIPO,
+                en_localidad: idLocalidad
+            })
+
+            nuevasBibliotecas.push(nuevaBiblioteca);
+    }
+
+    //console.log(nuevasBibliotecas);
+    
+    tab.quit();
+
+     try{
+        
+
+        await Provincia.insertMany(nuevasProvincias, function(err, result) {
+            // Your treatement
+        });
+
+        // console.log(nuevasLocalidades[0]);
+
+        // nuevasLocalidades[0].save();
+
+        await Localidad.insertMany(nuevasLocalidades, function(err, result) {
+            // Your treatement
+        });
+
+        await Biblioteca.insertMany(nuevasBibliotecas, function(err, result) {
+            console.log(err);
+        });
+
+        // // Generate response
+        // return res.status(201).json({
+        //     ok: true,
+        //     msg: 'Bibliotecas creadas correctamente!'
+        // });
+
+     
+    } catch (error) {
+         console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Please, talk with administrator'
+        });
+    }
+
+}
+
+const cargarTodasLasBibliotecas = async(req, res = response) => {
+
+    try {
+        await cargarBibliotecasCatInd(req, res);
+
+        await cargarBibliotecasEuskadiInd(req, res);
+
+        await cargarBibliotecasValenciaInd(req, res);
+
+        return res.status(201).json({
+            ok: true,
+            msg: 'Bibliotecas creadas correctamente!'
+        });
+    }
+    catch(e) {
+        return res.status(501).json({
+            ok: false,
+            msg: 'Error interno'
+        });
+    }
+
 
 }
 
@@ -781,6 +1160,14 @@ function csvJSON(csv){
     return res; //JSON
 }
 
+function convertTipoCV(tipo) {
+    if(tipo === 'PÚBLICA' || tipo ==='PUBLICA') {
+        return 'Publica';
+    }
+
+    return 'P' + tipo.substring(1).toLowerCase();
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -789,5 +1176,6 @@ module.exports = {
     cargarBibliotecasCat,
     cargarBibliotecasEuskadi,
     cargarBibliotecasValencia,
+    cargarTodasLasBibliotecas,
     eliminarDatos
 }
