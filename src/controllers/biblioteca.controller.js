@@ -424,8 +424,25 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
 
     //console.log(bibliotecas);
 
-    bibliotecas.forEach(element => {
+    var provinciasExistentes = await Provincia.find();
+    var nombresProvinciasExistentes = new Array();
+    for (let i = 0; i < provinciasExistentes.length; i++){
+        nombresProvinciasExistentes.push(provinciasExistentes[i].nombre)
+    }
 
+    var localidadesExistentes = await Localidad.find();
+    var nombresLocalidadesExistentes = new Array();
+    for (let i = 0; i < localidadesExistentes.length; i++){
+        nombresLocalidadesExistentes.push(localidadesExistentes[i].nombre)
+    }
+
+    var bibliotecasExistentes = await Biblioteca.find();
+    var nombresBibliotecasExistentes = new Array();
+    for (let i = 0; i < bibliotecasExistentes.length; i++){
+        nombresBibliotecasExistentes.push(bibliotecasExistentes[i].nombre)
+    }
+
+    for (let i = 0; i < bibliotecas.length; i++) {
         // console.log(element['telefon1']);
 
         const {
@@ -440,7 +457,7 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
             alies,
             poblacio,
             codi_municipi
-        } = element;
+        } = bibliotecas[i];
 
         const name = convetirAString(nom);
         const properties = convetirAString(propietats);
@@ -454,29 +471,44 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
         const poblation = convetirAString(poblacio);
         const municipalCode = convetirAString(codi_municipi);
 
+        if(nombresBibliotecasExistentes.includes(name)){
+            continue;
+        }
+
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        //console.log(typeof cpostal);
-
         let nombreProvincia = obtenerNombreCP(zipCode.substring(0, 2));
 
-        const nuevaProvincia = new Provincia({
-            _id: idProvincia,
-            nombre: nombreProvincia,
-            codigo: zipCode.substring(0, 2)
-        })
+        if (nombresProvinciasExistentes.includes(nombreProvincia)){
+            idProvincia = obtainIdUsingName(nombreProvincia, provinciasExistentes);
+            
+        }
+        else{
+            const nuevaProvincia = new Provincia({
+                _id: idProvincia,
+                nombre: nombreProvincia,
+                codigo: zipCode.substring(0, 2)
+            })
+            nuevasProvincias.push(nuevaProvincia);
+            provinciasExistentes.push(nuevaProvincia);
+            nombresProvinciasExistentes.push(nombreProvincia);
+        }
 
-        nuevasProvincias.push(nuevaProvincia);
-
-        const nuevaLocalidad = new Localidad({
-            _id: idLocalidad,
-            nombre: poblation,
-            codigo: convertCM(municipalCode),
-            en_provincia: idProvincia
-        })
-
-        nuevasLocalidades.push(nuevaLocalidad);
+        if (nombresLocalidadesExistentes.includes(poblation)){
+            idLocalidad = obtainIdUsingName(poblation, localidadesExistentes)
+        }
+        else{
+            const nuevaLocalidad = new Localidad({
+                _id: idLocalidad,
+                nombre: poblation,
+                codigo: convertCM(municipalCode),
+                en_provincia: idProvincia
+            })
+            nuevasLocalidades.push(nuevaLocalidad);
+            localidadesExistentes.push(nuevaLocalidad);
+            nombresLocalidadesExistentes.push(poblation);
+        }
 
         let tipo = 'Publica';
         if (properties.indexOf('Altra titularitat') != -1) {
@@ -498,17 +530,17 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
         })
 
         nuevasBibliotecas.push(nuevaBiblioteca);
-    });
+    }
 
     //console.log(nuevasBibliotecas);
 
     try {
 
-        // console.log(nuevasProvincias);
+        //console.log(nuevasProvincias);
 
-        // console.log(nuevasLocalidades);
+        //console.log(nuevasLocalidades);
 
-        // console.log(nuevasBibliotecas);
+        //console.log(nuevasBibliotecas);
 
         await Provincia.insertMany(nuevasProvincias, function (err, result) {
             // Your treatement
@@ -526,7 +558,7 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
             console.log(err);
         });
 
-        // Generate response
+        //Generate response
         // return res.status(201).json({
         //     ok: true,
         //     msg: 'Bibliotecas creadas correctamente!'
@@ -725,6 +757,24 @@ const cargarBibliotecasEuskadiInd = async (req, res = response) => {
 
     //console.log(bibliotecas);
 
+    var provinciasExistentes = await Provincia.find();
+    var nombresProvinciasExistentes = new Array();
+    for (let i = 0; i < provinciasExistentes.length; i++){
+        nombresProvinciasExistentes.push(provinciasExistentes[i].nombre)
+    }
+
+    var localidadesExistentes = await Localidad.find();
+    var nombresLocalidadesExistentes = new Array();
+    for (let i = 0; i < localidadesExistentes.length; i++){
+        nombresLocalidadesExistentes.push(localidadesExistentes[i].nombre)
+    }
+
+    var bibliotecasExistentes = await Biblioteca.find();
+    var nombresBibliotecasExistentes = new Array();
+    for (let i = 0; i < bibliotecasExistentes.length; i++){
+        nombresBibliotecasExistentes.push(bibliotecasExistentes[i].nombre)
+    }
+
     bibliotecas.forEach(element => {
 
         //console.log(element['phone']);
@@ -756,25 +806,42 @@ const cargarBibliotecasEuskadiInd = async (req, res = response) => {
             zipFile
         } = element;
 
+        if(nombresBibliotecasExistentes.includes(documentName)){
+            return;
+        }
+
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        const nuevaProvincia = new Provincia({
-            _id: idProvincia,
-            nombre: territory,
-            codigo: postalcode[0] + postalcode[1]
-        })
 
-        nuevasProvincias.push(nuevaProvincia);
+        if (nombresProvinciasExistentes.includes(territory)){
+            idProvincia = obtainIdUsingName(territory, provinciasExistentes);           
+        }
+        else{
+            const nuevaProvincia = new Provincia({
+                _id: idProvincia,
+                nombre: territory,
+                codigo: postalcode[0] + postalcode[1]
+            })
+            nuevasProvincias.push(nuevaProvincia);
+            provinciasExistentes.push(nuevaProvincia);
+            nombresProvinciasExistentes.push(territory);
+        }
 
-        const nuevaLocalidad = new Localidad({
-            _id: idLocalidad,
-            nombre: municipality,
-            codigo: postalcode.toString().replace('.', ""),
-            en_provincia: idProvincia
-        })
-
-        nuevasLocalidades.push(nuevaLocalidad);
+        if (nombresLocalidadesExistentes.includes(municipality)){
+            idLocalidad = obtainIdUsingName(municipality, localidadesExistentes)
+        }
+        else{
+            const nuevaLocalidad = new Localidad({
+                _id: idLocalidad,
+                nombre: municipality,
+                codigo: postalcode.toString().replace('.', ""),
+                en_provincia: idProvincia
+            })
+            nuevasLocalidades.push(nuevaLocalidad);
+            localidadesExistentes.push(nuevaLocalidad);
+            nombresLocalidadesExistentes.push(municipality);
+        }
 
         const nuevaBiblioteca = new Biblioteca({
             _id: Type.ObjectId(),
@@ -817,7 +884,7 @@ const cargarBibliotecasEuskadiInd = async (req, res = response) => {
             console.log(err);
         });
 
-        // // Generate response
+        // Generate response
         // return res.status(201).json({
         //     ok: true,
         //     msg: 'Bibliotecas creadas correctamente!'
@@ -1026,6 +1093,24 @@ const cargarBibliotecasValenciaInd = async (req, res = response) => {
 
     //console.log(bibliotecas);
 
+    var provinciasExistentes = await Provincia.find();
+    var nombresProvinciasExistentes = new Array();
+    for (let i = 0; i < provinciasExistentes.length; i++){
+        nombresProvinciasExistentes.push(provinciasExistentes[i].nombre)
+    }
+
+    var localidadesExistentes = await Localidad.find();
+    var nombresLocalidadesExistentes = new Array();
+    for (let i = 0; i < localidadesExistentes.length; i++){
+        nombresLocalidadesExistentes.push(localidadesExistentes[i].nombre)
+    }
+
+    var bibliotecasExistentes = await Biblioteca.find();
+    var nombresBibliotecasExistentes = new Array();
+    for (let i = 0; i < bibliotecasExistentes.length; i++){
+        nombresBibliotecasExistentes.push(bibliotecasExistentes[i].nombre)
+    }
+
     let tabOpened = obtainTabOpened();
     await sleep(15000);
     for (let i = 0; i < bibliotecas.length; i++) {
@@ -1052,23 +1137,42 @@ const cargarBibliotecasValenciaInd = async (req, res = response) => {
             DECRETO
         } = element;
 
+        if(nombresBibliotecasExistentes.includes(NOMBRE)){
+            continue;
+        }
+
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        const nuevaProvincia = new Provincia({
-            _id: idProvincia,
-            nombre: NOM_PROVINCIA,
-            codigo: COD_PROVINCIA
-        })
-        nuevasProvincias.push(nuevaProvincia);
+        if (nombresProvinciasExistentes.includes(NOM_PROVINCIA)){
+            idProvincia = obtainIdUsingName(NOM_PROVINCIA, provinciasExistentes);
+            
+        }
+        else{
+            const nuevaProvincia = new Provincia({
+                _id: idProvincia,
+                nombre: NOM_PROVINCIA,
+                codigo: COD_PROVINCIA
+            })
+            nuevasProvincias.push(nuevaProvincia);
+            provinciasExistentes.push(nuevaProvincia);
+            nombresProvinciasExistentes.push(NOM_PROVINCIA);
+        }
 
-        const nuevaLocalidad = new Localidad({
-            _id: idLocalidad,
-            nombre: NOM_MUNICIPIO,
-            codigo: convertCMV(COD_PROVINCIA, COD_MUNICIPIO),
-            en_provincia: idProvincia
-        })
-        nuevasLocalidades.push(nuevaLocalidad);
+        if (nombresLocalidadesExistentes.includes(NOM_MUNICIPIO)){
+            idLocalidad = obtainIdUsingName(NOM_MUNICIPIO, localidadesExistentes)
+        }
+        else{
+            const nuevaLocalidad = new Localidad({
+                _id: idLocalidad,
+                nombre: NOM_MUNICIPIO,
+                codigo: convertCMV(COD_PROVINCIA, COD_MUNICIPIO),
+                en_provincia: idProvincia
+            })
+            nuevasLocalidades.push(nuevaLocalidad);
+            localidadesExistentes.push(nuevaLocalidad);
+            nombresLocalidadesExistentes.push(NOM_MUNICIPIO);
+        }
 
         let latitud2;
         let longitud2;
@@ -1120,7 +1224,7 @@ const cargarBibliotecasValenciaInd = async (req, res = response) => {
             console.log(err);
         });
 
-        // // Generate response
+        // Generate response
         // return res.status(201).json({
         //     ok: true,
         //     msg: 'Bibliotecas creadas correctamente!'
