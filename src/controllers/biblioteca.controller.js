@@ -1414,6 +1414,94 @@ function csvJSON(csv) {
     return res; //JSON
 }
 
+const obtenerBibliotecas = async(req, res = response) => {
+
+    var localidadBuscar = req.body.localidad;
+    var codPostalBuscar = req.body.codigoPostal;
+    var proviciaBuscar = req.body.provincia;
+    var tipoBuscar = req.body.tipo;
+    var BibliotecasDevolver= [];
+    var inicial = true
+
+    if(tipoBuscar != null){
+        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {tipo:tipoBuscar}, inicial)
+        inicial = false;
+    }
+
+    if(codPostalBuscar != null){
+        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {codigoPostal:codPostalBuscar}, inicial)
+        inicial = false;
+    }
+
+    if(localidadBuscar != null){
+        BibliotecasDevolver = await FiltrarPorParametroLocalidad(BibliotecasDevolver, {nombre:localidadBuscar}, inicial)
+        inicial = false;
+    }
+
+    if(proviciaBuscar != null){
+        BibliotecasDevolver = await FiltrasPorParametroProvincia(BibliotecasDevolver, {nombre:proviciaBuscar}, inicial)
+        inicial = false;
+    }
+
+    return res.json({
+        BibliotecasDevolver
+    });
+
+}
+
+async function FiltrarPorParametroBiblioteca(array, diccionario, inicial){
+    var BibliotecasRes= [];
+    if(inicial){
+        return await Biblioteca.find(diccionario);
+    }else{
+        if(array.length == 0){
+            return [];
+        }
+    }
+
+    var BibliotecasObtenidasPorBusqueda = await Biblioteca.find(diccionario);
+
+    BibliotecasObtenidasPorBusqueda.forEach( x => {
+        array.forEach( y => {
+            if(y.nombre == x.nombre){
+                BibliotecasRes.push(x);    
+            };
+        });
+    });
+    return BibliotecasRes;
+}
+
+async function FiltrarPorParametroLocalidad(array, diccionario, inicial){
+    var BibliotecasRes= [];
+    var LocalidadObtenidasPorBusqueda=[];
+    LocalidadObtenidasPorBusqueda = await Localidad.find(diccionario,{_id:1});
+
+    if(LocalidadObtenidasPorBusqueda.length > 1){
+        var LocalidadMultiplesObtenidasPorBusqueda = [];
+        for(let i = 0; i < LocalidadObtenidasPorBusqueda.length; i++){
+            LocalidadMultiplesObtenidasPorBusqueda.push(LocalidadObtenidasPorBusqueda[i]._id);
+        }
+        BibliotecasRes = FiltrarPorParametroBiblioteca(array, {en_localidad:{$in:LocalidadMultiplesObtenidasPorBusqueda}}, inicial)
+
+    }else{
+        BibliotecasRes = FiltrarPorParametroBiblioteca(array, {en_localidad: LocalidadObtenidasPorBusqueda[0]}, inicial)
+    }
+
+    
+    return BibliotecasRes;
+}
+
+
+async function  FiltrasPorParametroProvincia(array, diccionario, inicial){
+    var BibliotecasRes= [];
+
+    var ProvinciaObtenidaPorBusqueda = await Provincia.findOne(diccionario);
+
+    BibliotecasRes = FiltrarPorParametroLocalidad(array, {en_provincia: ProvinciaObtenidaPorBusqueda._id}, inicial)
+
+    return BibliotecasRes;
+}
+
 function convertTipoCV(tipo) {
     if (tipo === 'PÚBLICA' || tipo === 'PUBLICA') {
         return 'Publica';
@@ -1431,5 +1519,7 @@ module.exports = {
     cargarBibliotecasEuskadi,
     cargarBibliotecasValencia,
     cargarTodasLasBibliotecas,
-    eliminarDatos
+    eliminarDatos,
+    obtenerBibliotecas
+    
 }
