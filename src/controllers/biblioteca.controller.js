@@ -1424,23 +1424,35 @@ const obtenerBibliotecas = async(req, res = response) => {
     var inicial = true
 
     if(tipoBuscar != null){
-        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {tipo:tipoBuscar}, inicial)
+        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {tipo:{$regex : tipoBuscar}}, inicial)
         inicial = false;
     }
 
     if(codPostalBuscar != null){
-        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {codigoPostal:codPostalBuscar}, inicial)
+        BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {codigoPostal:{$regex : codPostalBuscar}}, inicial)
         inicial = false;
     }
 
     if(localidadBuscar != null){
-        BibliotecasDevolver = await FiltrarPorParametroLocalidad(BibliotecasDevolver, {nombre:localidadBuscar}, inicial)
+        BibliotecasDevolver = await FiltrarPorParametroLocalidad(BibliotecasDevolver, {nombre:{$regex : localidadBuscar}}, inicial)
         inicial = false;
     }
 
     if(proviciaBuscar != null){
-        BibliotecasDevolver = await FiltrasPorParametroProvincia(BibliotecasDevolver, {nombre:proviciaBuscar}, inicial)
+        BibliotecasDevolver = await FiltrasPorParametroProvincia(BibliotecasDevolver, {nombre:{$regex : proviciaBuscar}}, inicial)
         inicial = false;
+    }
+
+    llamadasEsperar = [];
+    for(let i=0; i < BibliotecasDevolver.length;i++){
+        llamadasEsperar.push(Localidad.findById({_id: BibliotecasDevolver[i].en_localidad})); 
+    }
+
+    for(let i=0; i< llamadasEsperar.length;i++){
+        var EventFound = await llamadasEsperar[i];
+        llamadasEsperar2= await Provincia.findById({_id: EventFound.en_provincia});
+        EventFound.en_provincia = llamadasEsperar2;
+        BibliotecasDevolver[i].en_localidad = EventFound;
     }
 
     return res.json({
