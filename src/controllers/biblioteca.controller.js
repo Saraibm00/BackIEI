@@ -1423,22 +1423,22 @@ const obtenerBibliotecas = async(req, res = response) => {
     var BibliotecasDevolver= [];
     var inicial = true
 
-    if(tipoBuscar != null){
+    if(tipoBuscar != null && tipoBuscar != "") {
         BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {tipo:{$regex : tipoBuscar}}, inicial)
         inicial = false;
     }
 
-    if(codPostalBuscar != null){
+    if(codPostalBuscar != null && codPostalBuscar != "") {
         BibliotecasDevolver = await FiltrarPorParametroBiblioteca(BibliotecasDevolver, {codigoPostal:{$regex : codPostalBuscar}}, inicial)
         inicial = false;
     }
 
-    if(localidadBuscar != null){
+    if(localidadBuscar != null && localidadBuscar != "") {
         BibliotecasDevolver = await FiltrarPorParametroLocalidad(BibliotecasDevolver, {nombre:{$regex : localidadBuscar}}, inicial)
         inicial = false;
     }
 
-    if(proviciaBuscar != null){
+    if(proviciaBuscar != null && proviciaBuscar != "") {
         BibliotecasDevolver = await FiltrasPorParametroProvincia(BibliotecasDevolver, {nombre:{$regex : proviciaBuscar}}, inicial)
         inicial = false;
     }
