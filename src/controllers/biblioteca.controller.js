@@ -173,10 +173,14 @@ async function obtainTabOpened() {
     try {
         // Step 1 - Opening the geeksforgeeks sign in page
         let tabToOpen = tab.get("https://www.coordenadas-gps.com/");
+        //Find element by link text and store in variable "Element" 
+        let element = tab.findElement(By.id("map_canvas"));
+                // Timeout to wait if connection is slow
+        tab.executeScript("arguments[0].scrollIntoView(true);", element);
+        await sleep(1000);
         tabToOpen
             .then(tabOpened = function () {
 
-                // Timeout to wait if connection is slow
                 let findTimeOutP =
                     tab.manage().setTimeouts({
                         implicit: 3000, // 10 seconds
