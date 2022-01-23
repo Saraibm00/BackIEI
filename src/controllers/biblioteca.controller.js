@@ -286,7 +286,7 @@ const cargarBibliotecasCat = async (req, res = response) => {
         const telephone = convetirAString(telefon1);
         const emailB = convetirAString(email);
         const aka = convetirAString(alies);
-        const poblation = convetirAString(poblacio);
+        const poblation = convetirAString(poblacio).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const municipalCode = convetirAString(codi_municipi);
 
         if(nombresBibliotecasExistentes.includes(name)){
@@ -296,7 +296,7 @@ const cargarBibliotecasCat = async (req, res = response) => {
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        let nombreProvincia = obtenerNombreCP(zipCode.substring(0, 2));
+        let nombreProvincia = obtenerNombreCP(zipCode.substring(0, 2)).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
         if (nombresProvinciasExistentes.includes(nombreProvincia)){
             idProvincia = obtainIdUsingName(nombreProvincia, provinciasExistentes);
@@ -472,7 +472,7 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
         const telephone = convetirAString(telefon1);
         const emailB = convetirAString(email);
         const aka = convetirAString(alies);
-        const poblation = convetirAString(poblacio);
+        const poblation = convetirAString(poblacio).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const municipalCode = convetirAString(codi_municipi);
 
         if(nombresBibliotecasExistentes.includes(name)){
@@ -482,7 +482,7 @@ const cargarBibliotecasCatInd = async (req, res = response) => {
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        let nombreProvincia = obtenerNombreCP(zipCode.substring(0, 2));
+        let nombreProvincia = obtenerNombreCP(zipCode.substring(0, 2)).toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
         if (nombresProvinciasExistentes.includes(nombreProvincia)){
             idProvincia = obtainIdUsingName(nombreProvincia, provinciasExistentes);
@@ -651,37 +651,40 @@ const cargarBibliotecasEuskadi = async (req, res = response) => {
             return;
         }
 
+        let terri = territory.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let muni = municipality.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
 
-        if (nombresProvinciasExistentes.includes(territory)){
-            idProvincia = obtainIdUsingName(territory, provinciasExistentes);           
+        if (nombresProvinciasExistentes.includes(terri)){
+            idProvincia = obtainIdUsingName(terri, provinciasExistentes);           
         }
         else{
             const nuevaProvincia = new Provincia({
                 _id: idProvincia,
-                nombre: territory,
+                nombre: terri,
                 codigo: postalcode[0] + postalcode[1]
             })
             nuevasProvincias.push(nuevaProvincia);
             provinciasExistentes.push(nuevaProvincia);
-            nombresProvinciasExistentes.push(territory);
+            nombresProvinciasExistentes.push(terri);
         }
 
-        if (nombresLocalidadesExistentes.includes(municipality)){
-            idLocalidad = obtainIdUsingName(municipality, localidadesExistentes)
+        if (nombresLocalidadesExistentes.includes(muni)){
+            idLocalidad = obtainIdUsingName(muni, localidadesExistentes)
         }
         else{
             const nuevaLocalidad = new Localidad({
                 _id: idLocalidad,
-                nombre: municipality,
+                nombre: muni,
                 codigo: postalcode.toString().replace('.', ""),
                 en_provincia: idProvincia
             })
             nuevasLocalidades.push(nuevaLocalidad);
             localidadesExistentes.push(nuevaLocalidad);
-            nombresLocalidadesExistentes.push(municipality);
+            nombresLocalidadesExistentes.push(muni);
         }
 
         const nuevaBiblioteca = new Biblioteca({
@@ -817,34 +820,36 @@ const cargarBibliotecasEuskadiInd = async (req, res = response) => {
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
+        let terri = territory.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let muni = municipality.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        if (nombresProvinciasExistentes.includes(territory)){
-            idProvincia = obtainIdUsingName(territory, provinciasExistentes);           
+        if (nombresProvinciasExistentes.includes(terri)){
+            idProvincia = obtainIdUsingName(terri, provinciasExistentes);           
         }
         else{
             const nuevaProvincia = new Provincia({
                 _id: idProvincia,
-                nombre: territory,
+                nombre: terri,
                 codigo: postalcode[0] + postalcode[1]
             })
             nuevasProvincias.push(nuevaProvincia);
             provinciasExistentes.push(nuevaProvincia);
-            nombresProvinciasExistentes.push(territory);
+            nombresProvinciasExistentes.push(terri);
         }
 
-        if (nombresLocalidadesExistentes.includes(municipality)){
-            idLocalidad = obtainIdUsingName(municipality, localidadesExistentes)
+        if (nombresLocalidadesExistentes.includes(muni)){
+            idLocalidad = obtainIdUsingName(muni, localidadesExistentes)
         }
         else{
             const nuevaLocalidad = new Localidad({
                 _id: idLocalidad,
-                nombre: municipality,
+                nombre: muni,
                 codigo: postalcode.toString().replace('.', ""),
                 en_provincia: idProvincia
             })
             nuevasLocalidades.push(nuevaLocalidad);
             localidadesExistentes.push(nuevaLocalidad);
-            nombresLocalidadesExistentes.push(municipality);
+            nombresLocalidadesExistentes.push(muni);
         }
 
         const nuevaBiblioteca = new Biblioteca({
@@ -978,34 +983,37 @@ const cargarBibliotecasValencia = async (req, res = response) => {
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        if (nombresProvinciasExistentes.includes(NOM_PROVINCIA)){
-            idProvincia = obtainIdUsingName(NOM_PROVINCIA, provinciasExistentes);
+        let provi = NOM_PROVINCIA.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let muni = NOM_MUNICIPIO.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (nombresProvinciasExistentes.includes(provi)){
+            idProvincia = obtainIdUsingName(provi, provinciasExistentes);
             
         }
         else{
             const nuevaProvincia = new Provincia({
                 _id: idProvincia,
-                nombre: NOM_PROVINCIA,
+                nombre: provi,
                 codigo: COD_PROVINCIA
             })
             nuevasProvincias.push(nuevaProvincia);
             provinciasExistentes.push(nuevaProvincia);
-            nombresProvinciasExistentes.push(NOM_PROVINCIA);
+            nombresProvinciasExistentes.push(provi);
         }
 
-        if (nombresLocalidadesExistentes.includes(NOM_MUNICIPIO)){
-            idLocalidad = obtainIdUsingName(NOM_MUNICIPIO, localidadesExistentes)
+        if (nombresLocalidadesExistentes.includes(muni)){
+            idLocalidad = obtainIdUsingName(muni, localidadesExistentes)
         }
         else{
             const nuevaLocalidad = new Localidad({
                 _id: idLocalidad,
-                nombre: NOM_MUNICIPIO,
+                nombre: muni,
                 codigo: convertCMV(COD_PROVINCIA, COD_MUNICIPIO),
                 en_provincia: idProvincia
             })
             nuevasLocalidades.push(nuevaLocalidad);
             localidadesExistentes.push(nuevaLocalidad);
-            nombresLocalidadesExistentes.push(NOM_MUNICIPIO);
+            nombresLocalidadesExistentes.push(muni);
         }
 
         let latitud2;
@@ -1148,34 +1156,37 @@ const cargarBibliotecasValenciaInd = async (req, res = response) => {
         let idProvincia = Type.ObjectId();
         let idLocalidad = Type.ObjectId();
 
-        if (nombresProvinciasExistentes.includes(NOM_PROVINCIA)){
-            idProvincia = obtainIdUsingName(NOM_PROVINCIA, provinciasExistentes);
+        let provi = NOM_PROVINCIA.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let muni = NOM_MUNICIPIO.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+        if (nombresProvinciasExistentes.includes(provi)){
+            idProvincia = obtainIdUsingName(provi, provinciasExistentes);
             
         }
         else{
             const nuevaProvincia = new Provincia({
                 _id: idProvincia,
-                nombre: NOM_PROVINCIA,
+                nombre: provi,
                 codigo: COD_PROVINCIA
             })
             nuevasProvincias.push(nuevaProvincia);
             provinciasExistentes.push(nuevaProvincia);
-            nombresProvinciasExistentes.push(NOM_PROVINCIA);
+            nombresProvinciasExistentes.push(provi);
         }
 
-        if (nombresLocalidadesExistentes.includes(NOM_MUNICIPIO)){
-            idLocalidad = obtainIdUsingName(NOM_MUNICIPIO, localidadesExistentes)
+        if (nombresLocalidadesExistentes.includes(muni)){
+            idLocalidad = obtainIdUsingName(muni, localidadesExistentes)
         }
         else{
             const nuevaLocalidad = new Localidad({
                 _id: idLocalidad,
-                nombre: NOM_MUNICIPIO,
+                nombre: muni,
                 codigo: convertCMV(COD_PROVINCIA, COD_MUNICIPIO),
                 en_provincia: idProvincia
             })
             nuevasLocalidades.push(nuevaLocalidad);
             localidadesExistentes.push(nuevaLocalidad);
-            nombresLocalidadesExistentes.push(NOM_MUNICIPIO);
+            nombresLocalidadesExistentes.push(muni);
         }
 
         let latitud2;
@@ -1420,9 +1431,9 @@ function csvJSON(csv) {
 
 const obtenerBibliotecas = async(req, res = response) => {
 
-    var localidadBuscar = req.body.localidad;
+    var localidadBuscar = req.body.localidad.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     var codPostalBuscar = req.body.codigoPostal;
-    var proviciaBuscar = req.body.provincia;
+    var proviciaBuscar = req.body.provincia.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     var tipoBuscar = req.body.tipo;
     var BibliotecasDevolver= [];
     var inicial = true
