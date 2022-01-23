@@ -21,10 +21,10 @@ const RUTAEUS = "http://127.0.0.1:5000/euskadiJson",
 
 const { Builder, By, Key, until } = require('selenium-webdriver');
 
-// const firefox = require('selenium-webdriver/firefox');
+const firefox = require('selenium-webdriver/firefox');
 
 // Include the chrome driver
-require("chromedriver");
+//require("chromedriver");
 
 // Include selenium webdriver
 let swd = require("selenium-webdriver");
@@ -166,7 +166,7 @@ async function obtainDireccion(tabOpened, direccion, ciudad) {
 async function obtainTabOpened() {
 
     let browser = new swd.Builder();
-    tab = browser.forBrowser("chrome").build();
+    tab = browser.forBrowser("firefox").build();
 
     let tabOpened;
 
