@@ -91,7 +91,7 @@ async function obtainDireccion(tabOpened, direccion, ciudad) {
                 //     swd.By.css("#latitude")
                 // );
 
-                await sleep(1000);
+                await sleep(6000);
 
                 let promiseDiv = tab.findElement(
                     swd.By.xpath("//div[@id='info_window']")
@@ -173,11 +173,13 @@ async function obtainTabOpened() {
     try {
         // Step 1 - Opening the geeksforgeeks sign in page
         let tabToOpen = tab.get("https://www.coordenadas-gps.com/");
+        await sleep(6000);
+
         //Find element by link text and store in variable "Element" 
         let element = tab.findElement(By.id("map_canvas"));
                 // Timeout to wait if connection is slow
         tab.executeScript("arguments[0].scrollIntoView(true);", element);
-        await sleep(1000);
+        await sleep(6000);
         tabToOpen
             .then(tabOpened = function () {
 
@@ -1523,6 +1525,10 @@ async function  FiltrasPorParametroProvincia(array, diccionario, inicial){
     var BibliotecasRes= [];
 
     var ProvinciaObtenidaPorBusqueda = await Provincia.findOne(diccionario);
+
+    if (ProvinciaObtenidaPorBusqueda == null) {
+        return [];
+    }
 
     BibliotecasRes = FiltrarPorParametroLocalidad(array, {en_provincia: ProvinciaObtenidaPorBusqueda._id}, inicial)
 
